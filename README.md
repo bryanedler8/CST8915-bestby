@@ -9,7 +9,7 @@ For the full demo, this service is designed to work alongside four other microse
 
 
 
-[Watch the Best Buy Microservices Demo on YouTube](https://www.youtube.com/watch?v=VIDEO_ID)
+[Watch the Best Buy Microservices Demo on YouTube](https://youtu.be/6ggwfaoV994)
 
 
 ## 🏗️ The Best Buy Microservices Ecosystem
