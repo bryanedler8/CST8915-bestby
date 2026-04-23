@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: product-service-config
+  namespace: bestbuy
+data:
+  APP_HOST: "0.0.0.0"
+  APP_PORT: "3002"
+  LOG_LEVEL: "info"
+  WASM_RULES_ENGINE_ENABLED: "false"

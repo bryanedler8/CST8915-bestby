@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: store-front-nginx-config
+  namespace: bestbuy
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name localhost;
+        
+        root /usr/share/nginx/html;
+        index index.html;
+        
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+        
+        location /health {
+            default_type application/json;
+            return 200 '{"status":"ok","service":"store-front"}';
+        }
+        
+        location /products {
+            proxy_pass http://product-service:3002/products;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+        
+        location /api/ {
+            proxy_pass http://order-service:3003/api/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+        }
+        
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root /usr/share/nginx/html;
+        }
+    }

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: store-front-config
+  namespace: bestbuy
+data:
+  VUE_APP_PRODUCT_SERVICE_URL: "http://product-service:3002"
+  VUE_APP_ORDER_SERVICE_URL: "http://order-service:3003"

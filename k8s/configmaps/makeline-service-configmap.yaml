@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: makeline-service-config
+  namespace: bestbuy
+data:
+  PORT: "3004"
+  ORDER_DB_NAME: "bestbuy"
+  ORDER_DB_COLLECTION_NAME: "orders"
+  PRODUCT_SERVICE_URL: "http://product-service:3002"

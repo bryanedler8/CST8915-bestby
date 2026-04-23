@@ -1,0 +1,164 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:latest
+    container_name: bestbuy-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - bestbuy-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # RabbitMQ Message Queue
+  rabbitmq:
+    image: rabbitmq:3.11.17-management-alpine
+    container_name: bestbuy-rabbitmq
+    restart: unless-stopped
+    environment:
+      - RABBITMQ_DEFAULT_USER=username
+      - RABBITMQ_DEFAULT_PASS=password
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - ./order-service-L8/enabled_plugins:/etc/rabbitmq/enabled_plugins
+    networks:
+      - bestbuy-network
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Product Service (Rust)
+  product-service:
+    build: ./product-service-L8
+    container_name: bestbuy-product-service
+    restart: unless-stopped
+    environment:
+      - APP_HOST=0.0.0.0
+      - APP_PORT=3002
+      - LOG_LEVEL=info
+      - WASM_RULES_ENGINE_ENABLED=false
+    ports:
+      - "3002:3002"
+    networks:
+      - bestbuy-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Order Service (Node.js)
+  order-service:
+    build: ./order-service-L8
+    container_name: bestbuy-order-service
+    restart: unless-stopped
+    environment:
+      - PORT=3003
+      - PRODUCT_SERVICE_URL=http://product-service:3002
+      - NODE_ENV=production
+    ports:
+      - "3003:3003"
+    depends_on:
+      product-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - bestbuy-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Makeline Service (Go)
+  makeline-service:
+    build: ./makeline-service-L8
+    container_name: bestbuy-makeline-service
+    restart: unless-stopped
+    environment:
+      - PORT=3004
+      - ORDER_DB_URI=mongodb://mongodb:27017
+      - ORDER_DB_NAME=bestbuy
+      - ORDER_DB_COLLECTION_NAME=orders
+      - PRODUCT_SERVICE_URL=http://product-service:3002
+    ports:
+      - "3004:3004"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+    networks:
+      - bestbuy-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Store Front (Vue.js - Customer UI)
+  store-front:
+    build: ./store-front-L8
+    container_name: bestbuy-store-front
+    restart: unless-stopped
+    environment:
+      - VUE_APP_PRODUCT_SERVICE_URL=http://product-service:3002
+      - VUE_APP_ORDER_SERVICE_URL=http://order-service:3003
+    ports:
+      - "8080:8080"
+    depends_on:
+      product-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+    networks:
+      - bestbuy-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Store Admin (Vue.js - Employee UI)
+  store-admin:
+    build: ./store-admin-L8
+    container_name: bestbuy-store-admin
+    restart: unless-stopped
+    environment:
+      - VUE_APP_PRODUCT_SERVICE_URL=http://product-service:3002
+      - VUE_APP_ORDER_SERVICE_URL=http://order-service:3003
+    ports:
+      - "8081:8080"
+    depends_on:
+      product-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+    networks:
+      - bestbuy-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  bestbuy-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local

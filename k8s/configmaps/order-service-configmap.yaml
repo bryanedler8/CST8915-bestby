@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: order-service-config
+  namespace: bestbuy
+data:
+  PORT: "3003"
+  PRODUCT_SERVICE_URL: "http://product-service:3002"
+  NODE_ENV: "production"

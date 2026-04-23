@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: makeline-service
+  namespace: bestbuy
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: makeline-service
+  template:
+    metadata:
+      labels:
+        app: makeline-service
+    spec:
+      containers:
+      - name: makeline-service
+        image: bryanedler8/makeline-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3004
+        env:
+        - name: PORT
+          value: "3004"
+        - name: ORDER_DB_URI
+          value: "mongodb://mongodb:27017"
+        - name: ORDER_DB_NAME
+          value: "bestbuy"
+        - name: ORDER_DB_COLLECTION_NAME
+          value: "orders"
+        - name: PRODUCT_SERVICE_URL
+          value: "http://product-service:3002"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: makeline-service
+  namespace: bestbuy
+spec:
+  selector:
+    app: makeline-service
+  ports:
+  - port: 3004
+    targetPort: 3004
+  type: ClusterIP
