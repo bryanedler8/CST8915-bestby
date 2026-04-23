@@ -5,7 +5,7 @@ This repository is part of a cloud-native microservices demo for a **Best Buy El
 For the full demo, this service is designed to work alongside four other microservices and a MongoDB database.
 
 
-![diagram](./images/Cloud-native microse.png.png)
+![diagram](./images/Cloud-native microse.png)
 
 
 
